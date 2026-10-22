@@ -1,0 +1,21 @@
+account_id,account_name,statement,category
+4100,Package tours,P&L,Revenue
+4200,Flight sales,P&L,Revenue
+4300,Hotel & ancillary,P&L,Revenue
+5100,Direct costs,P&L,COGS
+6100,Personnel,P&L,Opex
+6200,Marketing,P&L,Opex
+6300,IT & systems,P&L,Opex
+6400,Admin & other,P&L,Opex
+6800,Depreciation & amortisation,P&L,D&A
+7100,Interest expense,P&L,Interest
+8100,Income tax,P&L,Tax
+1010,Cash,BS,Current assets
+1100,Trade receivables,BS,Current assets
+1500,Prepaid & other current assets,BS,Current assets
+1800,Fixed assets (net),BS,Non-current assets
+2100,Trade payables,BS,Current liabilities
+2200,Accruals & other current liabilities,BS,Current liabilities
+2300,Short-term debt,BS,Current liabilities
+2500,Long-term debt,BS,Non-current liabilities
+3100,Equity,BS,Equity

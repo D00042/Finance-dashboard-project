@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Finance Dashboard</title>
+<meta name="description" content="Corporate finance dashboard: profitability, budget vs actual, liquidity and working capital. Synthetic data.">
+<style>
+:root{
+  --bg:#f4f6f9; --card:#ffffff; --ink:#1b2430; --muted:#5f6b7a; --line:#e3e8ee;
+  --navy:#1d3557; --blue:#4f86c6; --teal:#2a9d8f; --red:#d1495b; --amber:#e9a23b; --gray:#9aa5b1;
+  --good:#1f8a5b; --bad:#c0392b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--navy);color:#fff;padding:16px 24px}
+.head{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
+header small{display:block;opacity:.75;font-weight:400;margin-top:2px}
+.filters{display:flex;gap:12px;flex-wrap:wrap}
+.filters label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;opacity:.8;display:block;margin-bottom:3px}
+select{font:inherit;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:#264a78;color:#fff;min-width:170px}
+nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.tabs{max-width:1280px;margin:0 auto;display:flex;gap:4px;padding:0 16px;overflow-x:auto}
+.tab{border:0;background:none;padding:13px 16px;font:inherit;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+main{max-width:1280px;margin:0 auto;padding:20px 16px 40px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card .t{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
+.card .v{font-size:26px;font-weight:700;margin:4px 0 6px;font-variant-numeric:tabular-nums}
+.card .d{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.up{color:var(--good);font-weight:600}.down{color:var(--bad);font-weight:600}.flat{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 14px 6px;min-width:0}
+.panel h3{margin:0 0 2px;font-size:14px}
+.panel p.sub{margin:0 0 6px;color:var(--muted);font-size:12px}
+.c12{grid-column:span 12}.c8{grid-column:span 8}.c7{grid-column:span 7}.c6{grid-column:span 6}.c5{grid-column:span 5}.c4{grid-column:span 4}
+.chart{width:100%;height:320px}
+.chart.tall{height:360px}
+.insights{background:#fff;border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:10px;padding:12px 16px;margin-bottom:16px}
+.insights h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.insights ul{margin:0;padding-left:18px}.insights li{margin:3px 0}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+tr.sel td{background:#eef3fa;font-weight:600}
+.tablewrap{overflow-x:auto;padding-bottom:8px}
+footer{max-width:1280px;margin:0 auto;padding:0 16px 32px;color:var(--muted);font-size:12px}
+footer a{color:var(--blue)}
+.page{display:none}.page.active{display:block}
+@media (max-width:900px){.c8,.c7,.c6,.c5,.c4{grid-column:span 12}.chart{height:280px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <h1>Meridian Travel Group · Finance Dashboard<small>Synthetic data · EUR · Actual vs Budget · Jan 2024 – Sep 2026</small></h1>
+    <div class="filters">
+      <div><label for="fEntity">Entity</label><select id="fEntity"></select></div>
+      <div><label for="fYear">Period</label><select id="fYear"></select></div>
+    </div>
+  </div>
+</header>
+<nav><div class="tabs" id="tabs">
+  <button class="tab active" data-page="exec">Executive summary</button>
+  <button class="tab" data-page="profit">Profitability &amp; budget</button>
+  <button class="tab" data-page="liq">Liquidity &amp; balance sheet</button>
+  <button class="tab" data-page="wc">Working capital (DSO / DPO)</button>
+</div></nav>
+
+<main>
+  <section class="page active" id="page-exec">
+    <div class="cards" id="cards-exec"></div>
+    <div class="insights" id="insights"></div>
+    <div class="grid">
+      <div class="panel c7"><h3>Revenue: actual vs budget</h3><p class="sub" id="sub-rev"></p><div class="chart" id="ch-rev"></div></div>
+      <div class="panel c5"><h3>EBITDA bridge: budget → actual</h3><p class="sub">Favourable variances push EBITDA up, overruns pull it down (axis truncated)</p><div class="chart" id="ch-bridge"></div></div>
+      <div class="panel c12"><h3>Entity scorecard</h3><p class="sub">Selected period · highlighted row = current entity filter</p><div class="tablewrap"><table id="tbl"></table></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-profit">
+    <div class="cards" id="cards-profit"></div>
+    <div class="grid">
+      <div class="panel c7"><h3>Margin trend</h3><p class="sub">Monthly, all periods · travel is seasonal: margins peak in summer and dip in winter</p><div class="chart tall" id="ch-margin"></div></div>
+      <div class="panel c5"><h3>Operating costs vs budget</h3><p class="sub">Selected period · labels show variance (positive = overspend)</p><div class="chart tall" id="ch-cost"></div></div>
+      <div class="panel c12"><h3>Net income: actual vs budget</h3><p class="sub" id="sub-ni"></p><div class="chart" id="ch-ni"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-liq">
+    <div class="cards" id="cards-liq"></div>
+    <div class="grid">
+      <div class="panel c6"><h3>Cash and net debt</h3><p class="sub">Month-end, EUR</p><div class="chart" id="ch-cash"></div></div>
+      <div class="panel c6"><h3>Liquidity ratios</h3><p class="sub">Dotted line = 1.0x (current liabilities fully covered)</p><div class="chart" id="ch-ratio"></div></div>
+      <div class="panel c12"><h3>Balance sheet at period end</h3><p class="sub">Assets vs liabilities &amp; equity</p><div class="chart tall" id="ch-bs"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-wc">
+    <div class="cards" id="cards-wc"></div>
+    <div class="grid">
+      <div class="panel c6"><h3>DSO and DPO</h3><p class="sub">Days · 3-month rolling basis to smooth seasonality</p><div class="chart" id="ch-dsodpo"></div></div>
+      <div class="panel c6"><h3>DSO by entity</h3><p class="sub">Which business is collecting slower?</p><div class="chart" id="ch-dso-ent"></div></div>
+      <div class="panel c12"><h3>Cash gap (DSO − DPO) and trade working capital</h3><p class="sub">Positive gap = the business funds its customers' credit from its own cash</p><div class="chart" id="ch-gap"></div></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  All figures are <b>synthetic</b> (generated by <code>src/generate_data.py</code>), the company is fictional. Every KPI is calculated in SQL (<code>sql/02_kpi_views.sql</code>).
+  Definitions: EBITDA = revenue − direct costs − opex · DSO = receivables ÷ 3-month revenue × days · DPO = payables ÷ 3-month direct costs × days · ROA/ROE = trailing-12-month net income ÷ period-end assets/equity.
+  Built by Douaa Jatlaoui · <a href="https://d00042.github.io/Portfolio">Portfolio</a>
+</footer>
+
+<script src="assets/plotly.min.js"></script>
+<script>
+const D = __DATA__;
+const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const C = {navy:'#1d3557', blue:'#4f86c6', teal:'#2a9d8f', red:'#d1495b', amber:'#e9a23b', gray:'#9aa5b1', good:'#1f8a5b', bad:'#c0392b', ink:'#1b2430', grid:'#e8ecf1'};
+const ENT_COLOR = {FR:C.navy, DE:C.blue, UK:C.red, TN:C.teal, GRP:C.navy};
+const ENT_NAME = Object.fromEntries(D.entities.map(e => [e.id, e.name]));
+const state = {entity:'GRP', year:D.years[D.years.length-1], page:'exec'};
+const $ = id => document.getElementById(id);
+
+/* ---------- helpers ---------- */
+const sum = (rows, k) => rows.reduce((s, r) => s + (r[k] || 0), 0);
+const eur = v => { if (v == null) return '–'; const a = Math.abs(v), s = v < 0 ? '-' : '';
+  return a >= 1e6 ? `${s}€${(a/1e6).toFixed(1)}M` : a >= 1e3 ? `${s}€${(a/1e3).toFixed(0)}k` : `${s}€${a.toFixed(0)}`; };
+const pct = (v, d=1) => v == null ? '–' : `${(v*100).toFixed(d)}%`;
+const x = (v, d=2) => v == null ? '–' : `${v.toFixed(d)}x`;
+const days = v => v == null ? '–' : `${v.toFixed(0)} d`;
+const rows = (e, y) => D.kpi[e].filter(r => r.y === y);
+const lastMonthNum = y => Math.max(...D.kpi.GRP.filter(r => r.y === y).map(r => r.mn));
+const period = (e, y) => rows(e, y);                                   // months in the selected period
+const prior = (e, y) => D.kpi[e].filter(r => r.y === y-1 && r.mn <= lastMonthNum(y));   // same months, prior year
+const lastRow = (e, y) => rows(e, y).slice(-1)[0];
+const priorLast = (e, y) => D.kpi[e].find(r => r.y === y-1 && r.mn === lastMonthNum(y));
+const periodLabel = y => y === D.years[D.years.length-1] && lastMonthNum(y) < 12 ? `FY${y} YTD (Jan–${MN[lastMonthNum(y)-1]})` : `FY${y}`;
+
+function delta(text, diff, goodWhen='up') {
+  if (diff == null || !isFinite(diff)) return `<span class="flat">${text}: n/a</span>`;
+  const cls = Math.abs(diff) < 1e-9 ? 'flat' : ((diff > 0) === (goodWhen === 'up') ? 'up' : 'down');
+  return `<span>${text}</span>`;
+}
+function dspan(label, valueText, diff, goodWhen='up') {
+  if (diff == null || !isFinite(diff)) return `<div class="d"><span>${label}</span><span class="flat">n/a</span></div>`;
+  const cls = Math.abs(diff) < 1e-9 ? 'flat' : ((diff > 0) === (goodWhen === 'up') ? 'up' : 'down');
+  return `<div class="d"><span>${label}</span><span class="${cls}">${diff > 0 ? '▲' : diff < 0 ? '▼' : '■'} ${valueText}</span></div>`;
+}
+const relPct = (a, b) => b ? a/b - 1 : null;
+const sgn = (v, f) => (v > 0 ? '+' : '') + f(v);
+function card(t, v, l1, l2) { return `<div class="card"><div class="t">${t}</div><div class="v">${v}</div>${l1||''}${l2||''}</div>`; }
+
+const layoutBase = (extra={}) => Object.assign({
+  margin:{l:52, r:14, t:8, b:40}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+  font:{family:'-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif', size:12, color:C.ink},
+  hovermode:'x unified', legend:{orientation:'h', y:1.14, x:0},
+  xaxis:{gridcolor:C.grid, linecolor:C.grid, fixedrange:true},
+  yaxis:{gridcolor:C.grid, zeroline:false, fixedrange:true}
+}, extra);
+const cfg = {displayModeBar:false, responsive:true};
+const plot = (id, traces, layout) => Plotly.react(id, traces, layout, cfg);
+const monthLabel = r => `${MN[r.mn-1]} ${String(r.y).slice(2)}`;
+function shade(y) {   // highlight the selected period on all-period charts
+  const r = rows(state.entity, y);
+  return [{type:'rect', xref:'x', yref:'paper', x0:r[0].month, x1:r[r.length-1].month, y0:0, y1:1,
+    fillcolor:'rgba(29,53,87,0.07)', line:{width:0}, layer:'below'}];
+}
+const xDates = rs => rs.map(r => r.month);
+
+/* ---------- pages ---------- */
+function renderExec() {
+  const e = state.entity, y = state.year, cur = period(e, y), pri = prior(e, y);
+  const rev = sum(cur,'revenue'), brev = sum(cur,'b_revenue'), prev = sum(pri,'revenue');
+  const eb = sum(cur,'ebitda'), beb = sum(cur,'b_ebitda'), peb = sum(pri,'ebitda');
+  const m = eb/rev, bm = beb/brev, pm = pri.length ? peb/prev : null;
+  const ni = sum(cur,'net_income'), bni = sum(cur,'b_net_income'), pni = sum(pri,'net_income');
+  const lr = lastRow(e,y), pl = priorLast(e,y);
+  $('cards-exec').innerHTML =
+    card('Revenue', eur(rev), dspan('vs budget', sgn(relPct(rev,brev)*100, v=>v.toFixed(1))+'%', rev-brev), dspan('vs prior year', pri.length ? sgn(relPct(rev,prev)*100, v=>v.toFixed(1))+'%' : '', pri.length ? rev-prev : null)) +
+    card('EBITDA', eur(eb), dspan('vs budget', sgn(relPct(eb,beb)*100, v=>v.toFixed(1))+'%', eb-beb), dspan('vs prior year', pri.length ? sgn(relPct(eb,peb)*100, v=>v.toFixed(1))+'%' : '', pri.length ? eb-peb : null)) +
+    card('EBITDA margin', pct(m), dspan('vs budget', sgn((m-bm)*100, v=>v.toFixed(1))+' pp', m-bm), dspan('vs prior year', pm!=null ? sgn((m-pm)*100, v=>v.toFixed(1))+' pp' : '', pm!=null ? m-pm : null)) +
+    card('Net income', eur(ni), dspan('vs budget', sgn(relPct(ni,bni)*100, v=>v.toFixed(0))+'%', ni-bni), dspan('vs prior year', pri.length ? sgn(relPct(ni,pni)*100, v=>v.toFixed(0))+'%' : '', pri.length ? ni-pni : null)) +
+    card('Cash (period end)', eur(lr.cash), dspan('vs prior year', pl ? sgn(lr.cash-pl.cash, eur) : '', pl ? lr.cash-pl.cash : null), `<div class="d"><span>Net debt</span><span>${eur(lr.net_debt)}</span></div>`) +
+    card('DSO (period end)', days(lr.dso), dspan('vs prior year', pl ? sgn(lr.dso-pl.dso, v=>v.toFixed(0))+' d' : '', pl ? lr.dso-pl.dso : null, 'down'), `<div class="d"><span>DPO</span><span>${days(lr.dpo)}</span></div>`);
+
+  $('insights').innerHTML = `<h3>Key findings · ${periodLabel(D.years[D.years.length-1])} (all entities)</h3><ul>${D.insights.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+
+  // Revenue actual vs budget (selected period)
+  $('sub-rev').textContent = `${ENT_NAME[e]} · ${periodLabel(y)}`;
+  plot('ch-rev', [
+    {type:'bar', name:'Actual', x:cur.map(monthLabel), y:cur.map(r=>r.revenue), marker:{color:C.navy}, hovertemplate:'%{y:,.0f}'},
+    {type:'scatter', mode:'lines+markers', name:'Budget', x:cur.map(monthLabel), y:cur.map(r=>r.b_revenue), line:{color:C.amber, width:2.5}, marker:{size:6}, hovertemplate:'%{y:,.0f}'}
+  ], layoutBase({yaxis:{gridcolor:C.grid, tickformat:'.2s', zeroline:false, fixedrange:true}}));
+
+  // EBITDA bridge
+  const lines = D.pnl.filter(p => p.e === e && p.y === y && p.mn <= lastMonthNum(y));
+  const by = n => { const a = lines.filter(p => p.a === n); return [a.reduce((s,p)=>s+p.act,0), a.reduce((s,p)=>s+p.bud,0)]; };
+  const revLines = ['Package tours','Flight sales','Hotel & ancillary'].map(by);
+  const revVar = revLines.reduce((s,[a,b])=>s+a-b, 0);
+  const costs = [['Direct costs','COGS'],['Personnel','Pers.'],['Marketing','Mktg'],['IT & systems','IT'],['Admin & other','Admin']];
+  const steps = [['Rev.', revVar], ...costs.map(([n,l]) => { const [a,b] = by(n); return [l, b - a]; })];
+  plot('ch-bridge', [{
+    type:'waterfall', orientation:'v',
+    measure:['absolute', ...steps.map(()=> 'relative'), 'total'],
+    x:['Budget', ...steps.map(s=>s[0]), 'Actual'],
+    y:[beb, ...steps.map(s=>s[1]), 0],
+    text:[eur(beb), ...steps.map(s=>sgn(s[1], eur)), eur(eb)], textposition:'outside', textfont:{size:11},
+    increasing:{marker:{color:C.good}}, decreasing:{marker:{color:C.bad}}, totals:{marker:{color:C.navy}},
+    connector:{line:{color:C.gray, width:1}}, hoverinfo:'skip'
+  }], layoutBase({margin:{l:48,r:10,t:22,b:50}, hovermode:false, yaxis:{gridcolor:C.grid, tickformat:'.2s', zeroline:false, fixedrange:true, range:[Math.min(beb,eb)*0.85, Math.max(beb,eb)*1.06]}, xaxis:{fixedrange:true, tickfont:{size:11}, tickangle:0}}));
+
+  // Scorecard
+  const ids = ['FR','DE','UK','TN','GRP'];
+  const head = '<tr><th>Entity</th><th>Revenue</th><th>vs budget</th><th>EBITDA</th><th>EBITDA margin</th><th>Margin vs budget</th><th>Net income</th><th>Cash</th><th>DSO</th><th>Current ratio</th></tr>';
+  const body = ids.map(id => {
+    const c = period(id,y), r = sum(c,'revenue'), br = sum(c,'b_revenue'), b = sum(c,'ebitda'), bb = sum(c,'b_ebitda'), l = lastRow(id,y);
+    const vr = r/br-1, dm = b/r - bb/br;
+    const cl = v => v > 0.0005 ? 'up' : v < -0.0005 ? 'down' : 'flat';
+    return `<tr class="${id===e?'sel':''}"><td>${ENT_NAME[id]}</td><td>${eur(r)}</td><td class="${cl(vr)}">${sgn(vr*100,v=>v.toFixed(1))}%</td><td>${eur(b)}</td><td>${pct(b/r)}</td><td class="${cl(dm)}">${sgn(dm*100,v=>v.toFixed(1))} pp</td><td>${eur(sum(c,'net_income'))}</td><td>${eur(l.cash)}</td><td>${days(l.dso)}</td><td>${x(l.current_ratio)}</td></tr>`;
+  }).join('');
+  $('tbl').innerHTML = head + body;
+}
+
+function renderProfit() {
+  const e = state.entity, y = state.year, cur = period(e,y), pri = prior(e,y), all = D.kpi[e];
+  const gm = sum(cur,'gross_profit')/sum(cur,'revenue'), bgm = sum(cur,'b_gross_profit')/sum(cur,'b_revenue');
+  const em = sum(cur,'ebitda')/sum(cur,'revenue'), bem = sum(cur,'b_ebitda')/sum(cur,'b_revenue');
+  const nm = sum(cur,'net_income')/sum(cur,'revenue'), bnm = sum(cur,'b_net_income')/sum(cur,'b_revenue');
+  const pgm = pri.length ? sum(pri,'gross_profit')/sum(pri,'revenue') : null, pem = pri.length ? sum(pri,'ebitda')/sum(pri,'revenue') : null;
+  const lr = lastRow(e,y), pl = priorLast(e,y);
+  const pp = (a,b) => sgn((a-b)*100, v=>v.toFixed(1))+' pp';
+  $('cards-profit').innerHTML =
+    card('Gross margin', pct(gm), dspan('vs budget', pp(gm,bgm), gm-bgm), dspan('vs prior year', pgm!=null?pp(gm,pgm):'', pgm!=null?gm-pgm:null)) +
+    card('EBITDA margin', pct(em), dspan('vs budget', pp(em,bem), em-bem), dspan('vs prior year', pem!=null?pp(em,pem):'', pem!=null?em-pem:null)) +
+    card('Net margin', pct(nm), dspan('vs budget', pp(nm,bnm), nm-bnm)) +
+    card('ROA (TTM)', pct(lr.roa), dspan('vs prior year', pl&&pl.roa!=null?pp(lr.roa,pl.roa):'', pl&&pl.roa!=null?lr.roa-pl.roa:null)) +
+    card('ROE (TTM)', pct(lr.roe), dspan('vs prior year', pl&&pl.roe!=null?pp(lr.roe,pl.roe):'', pl&&pl.roe!=null?lr.roe-pl.roe:null));
+
+  plot('ch-margin', [
+    {type:'scatter', mode:'lines', name:'Gross margin', x:xDates(all), y:all.map(r=>r.gross_margin), line:{color:C.navy, width:2.5}, hovertemplate:'%{y:.1%}'},
+    {type:'scatter', mode:'lines', name:'EBITDA margin', x:xDates(all), y:all.map(r=>r.ebitda_margin), line:{color:C.teal, width:2.5}, hovertemplate:'%{y:.1%}'},
+    {type:'scatter', mode:'lines', name:'Net margin', x:xDates(all), y:all.map(r=>r.net_margin), line:{color:C.amber, width:2.5}, hovertemplate:'%{y:.1%}'}
+  ], layoutBase({shapes:shade(y), yaxis:{gridcolor:C.grid, tickformat:'.0%', zeroline:true, zerolinecolor:C.gray, fixedrange:true}}));
+
+  const lines = D.pnl.filter(p => p.e === e && p.y === y && p.mn <= lastMonthNum(y));
+  const names = ['Personnel','Marketing','IT & systems','Admin & other'];
+  const agg = names.map(n => { const a = lines.filter(p=>p.a===n); return [a.reduce((s,p)=>s+p.act,0), a.reduce((s,p)=>s+p.bud,0)]; });
+  plot('ch-cost', [
+    {type:'bar', orientation:'h', name:'Budget', y:names, x:agg.map(a=>a[1]), marker:{color:C.gray}, hovertemplate:'%{x:,.0f}'},
+    {type:'bar', orientation:'h', name:'Actual', y:names, x:agg.map(a=>a[0]), marker:{color:C.navy},
+     text:agg.map(a=>sgn((a[0]/a[1]-1)*100, v=>v.toFixed(1))+'%'), textposition:'outside', hovertemplate:'%{x:,.0f}'}
+  ], layoutBase({margin:{l:96,r:60,t:8,b:36}, barmode:'group', hovermode:'y unified', yaxis:{autorange:'reversed', fixedrange:true}, xaxis:{gridcolor:C.grid, tickformat:'.2s', fixedrange:true, range:[0, Math.max(...agg.flat())*1.18]}}));
+
+  $('sub-ni').textContent = `${ENT_NAME[e]} · ${periodLabel(y)}`;
+  plot('ch-ni', [
+    {type:'bar', name:'Actual', x:cur.map(monthLabel), y:cur.map(r=>r.net_income), marker:{color:C.navy}, hovertemplate:'%{y:,.0f}'},
+    {type:'scatter', mode:'lines+markers', name:'Budget', x:cur.map(monthLabel), y:cur.map(r=>r.b_net_income), line:{color:C.amber, width:2.5}, marker:{size:6}, hovertemplate:'%{y:,.0f}'}
+  ], layoutBase({yaxis:{gridcolor:C.grid, tickformat:'.2s', zeroline:true, zerolinecolor:C.gray, fixedrange:true}}));
+}
+
+function renderLiq() {
+  const e = state.entity, y = state.year, all = D.kpi[e], lr = lastRow(e,y), pl = priorLast(e,y);
+  const dd = (a,b,f,good='up') => pl && a!=null && b!=null ? dspan('vs prior year', sgn(a-b,f), a-b, good) : '';
+  $('cards-liq').innerHTML =
+    card('Current ratio', x(lr.current_ratio), dd(lr.current_ratio, pl&&pl.current_ratio, v=>v.toFixed(2)+'x')) +
+    card('Quick ratio', x(lr.quick_ratio), dd(lr.quick_ratio, pl&&pl.quick_ratio, v=>v.toFixed(2)+'x')) +
+    card('Working capital', eur(lr.working_capital), dd(lr.working_capital, pl&&pl.working_capital, eur)) +
+    card('Net debt / EBITDA', x(lr.net_debt_to_ebitda), lr.net_debt<0 ? '<div class="d"><span>Net cash position</span></div>' : '') +
+    card('Cash', eur(lr.cash), dd(lr.cash, pl&&pl.cash, eur));
+
+  plot('ch-cash', [
+    {type:'scatter', mode:'lines', name:'Cash', x:xDates(all), y:all.map(r=>r.cash), line:{color:C.teal, width:2.5}, hovertemplate:'%{y:,.0f}'},
+    {type:'scatter', mode:'lines', name:'Net debt', x:xDates(all), y:all.map(r=>r.net_debt), line:{color:C.red, width:2.5, dash:'dot'}, hovertemplate:'%{y:,.0f}'}
+  ], layoutBase({shapes:shade(y), yaxis:{gridcolor:C.grid, tickformat:'.2s', zeroline:true, zerolinecolor:C.gray, fixedrange:true}}));
+
+  plot('ch-ratio', [
+    {type:'scatter', mode:'lines', name:'Current ratio', x:xDates(all), y:all.map(r=>r.current_ratio), line:{color:C.navy, width:2.5}, hovertemplate:'%{y:.2f}x'},
+    {type:'scatter', mode:'lines', name:'Quick ratio', x:xDates(all), y:all.map(r=>r.quick_ratio), line:{color:C.blue, width:2.5}, hovertemplate:'%{y:.2f}x'},
+    {type:'scatter', mode:'lines', name:'Cash ratio', x:xDates(all), y:all.map(r=>r.cash_ratio), line:{color:C.amber, width:2.5}, hovertemplate:'%{y:.2f}x'}
+  ], layoutBase({shapes:[...shade(y), {type:'line', xref:'paper', x0:0, x1:1, yref:'y', y0:1, y1:1, line:{color:C.gray, width:1.5, dash:'dot'}}], yaxis:{gridcolor:C.grid, tickformat:'.1f', ticksuffix:'x', zeroline:false, fixedrange:true, rangemode:'tozero'}}));
+
+  const A = ['Assets','Liabilities & equity'];
+  const bar = (name, color, side, v) => ({type:'bar', name, x:A, y:[side===0?v:null, side===1?v:null], marker:{color},
+     text:[side===0?eur(v):'', side===1?eur(v):''], textposition:'inside', insidetextanchor:'middle', textfont:{color:'#fff', size:11}, hovertemplate:name+': %{y:,.0f}<extra></extra>'});
+  plot('ch-bs', [
+    bar('Cash', C.teal, 0, lr.cash), bar('Receivables', C.blue, 0, lr.receivables), bar('Prepaid & other', C.gray, 0, lr.prepaid), bar('Fixed assets', C.navy, 0, lr.fixed_assets),
+    bar('Payables', C.amber, 1, lr.payables), bar('Accruals', '#c9b27c', 1, lr.accruals), bar('Debt (ST + LT)', C.red, 1, lr.st_debt+lr.lt_debt), bar('Equity', '#2d6a4f', 1, lr.equity)
+  ], layoutBase({barmode:'stack', hovermode:'closest', margin:{l:52,r:14,t:30,b:36}, yaxis:{gridcolor:C.grid, tickformat:'.2s', zeroline:false, fixedrange:true}, legend:{orientation:'h', y:1.1}}));
+}
+
+function renderWc() {
+  const e = state.entity, y = state.year, all = D.kpi[e], lr = lastRow(e,y), pl = priorLast(e,y);
+  const dd = (a,b,good) => pl ? dspan('vs prior year', sgn(a-b, v=>v.toFixed(0))+' d', a-b, good) : '';
+  $('cards-wc').innerHTML =
+    card('DSO', days(lr.dso), dd(lr.dso, pl&&pl.dso, 'down')) +
+    card('DPO', days(lr.dpo), dd(lr.dpo, pl&&pl.dpo, 'up')) +
+    card('Cash gap (DSO − DPO)', days(lr.cash_gap_days), dd(lr.cash_gap_days, pl&&pl.cash_gap_days, 'down')) +
+    card('Receivables', eur(lr.receivables), pl ? dspan('vs prior year', sgn(lr.receivables-pl.receivables, eur), lr.receivables-pl.receivables, 'down') : '') +
+    card('Payables', eur(lr.payables), pl ? dspan('vs prior year', sgn(lr.payables-pl.payables, eur), lr.payables-pl.payables, 'up') : '');
+
+  plot('ch-dsodpo', [
+    {type:'scatter', mode:'lines', name:'DSO', x:xDates(all), y:all.map(r=>r.dso), line:{color:C.red, width:2.5}, hovertemplate:'%{y:.0f} days'},
+    {type:'scatter', mode:'lines', name:'DPO', x:xDates(all), y:all.map(r=>r.dpo), line:{color:C.teal, width:2.5}, hovertemplate:'%{y:.0f} days'}
+  ], layoutBase({shapes:shade(y), yaxis:{gridcolor:C.grid, ticksuffix:' d', rangemode:'tozero', zeroline:false, fixedrange:true}}));
+
+  plot('ch-dso-ent', ['FR','DE','UK','TN'].map(id => ({
+    type:'scatter', mode:'lines', name:ENT_NAME[id].replace('Meridian ',''), x:xDates(D.kpi[id]), y:D.kpi[id].map(r=>r.dso),
+    line:{color:ENT_COLOR[id], width:id===state.entity?3.5:2, }, opacity:(state.entity==='GRP'||id===state.entity)?1:0.35, hovertemplate:'%{y:.0f} days'
+  })), layoutBase({shapes:shade(y), yaxis:{gridcolor:C.grid, ticksuffix:' d', rangemode:'tozero', zeroline:false, fixedrange:true}}));
+
+  plot('ch-gap', [
+    {type:'bar', name:'Cash gap (days)', x:xDates(all), y:all.map(r=>r.cash_gap_days), marker:{color:all.map(r=>r.cash_gap_days>0?C.amber:C.teal)}, hovertemplate:'%{y:.0f} days'},
+    {type:'scatter', mode:'lines', name:'Trade working capital (right axis)', yaxis:'y2', x:xDates(all), y:all.map(r=>r.trade_working_capital), line:{color:C.navy, width:2.5}, hovertemplate:'%{y:,.0f}'}
+  ], layoutBase({shapes:shade(y), margin:{l:52,r:56,t:8,b:40}, yaxis:{gridcolor:C.grid, ticksuffix:' d', zeroline:true, zerolinecolor:C.gray, fixedrange:true},
+    yaxis2:{overlaying:'y', side:'right', tickformat:'.2s', showgrid:false, zeroline:false, fixedrange:true}}));
+}
+
+/* ---------- wiring ---------- */
+const RENDER = {exec:renderExec, profit:renderProfit, liq:renderLiq, wc:renderWc};
+function render() { RENDER[state.page](); }
+
+D.entities.forEach(e => $('fEntity').add(new Option(e.name, e.id)));
+D.years.forEach(y => $('fYear').add(new Option(periodLabel(y), y)));
+$('fYear').value = state.year;
+$('fEntity').onchange = ev => { state.entity = ev.target.value; render(); };
+$('fYear').onchange = ev => { state.year = +ev.target.value; render(); };
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === b));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + b.dataset.page));
+  state.page = b.dataset.page; render();
+});
+render();
+</script>
+</body>
+</html>
